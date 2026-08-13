@@ -1,66 +1,34 @@
 # Prayer Bead Counter
 
-A mobile-first digital japa mala (prayer bead) counter with a dark glassmorphism UI, switchable bead skins, round tracking, and a reverse countdown mode that plays a mantra clip when your target rounds are complete.
+A mobile-first digital japa mala — a 9-bead ring, dark glassmorphism UI, round tracking, and a countdown mode that plays an "Om Mani Padme Hum" clip when your target rounds are done.
 
-## Features
+Live: <https://prayer-bead-mala.netlify.app>
 
-- **9-bead mala ring** — tap the active bead in sequence to advance the count, just like a physical mala.
-- **Round tracking** — completing a loop of all 9 beads increments your round counter.
-- **Reset** — zero out the current count and start again.
-- **Bead skins** — switch between Glass (default), Wood, Stone/Marble, and Metallic styles.
-- **Reverse (countdown) mode** — set a target number of rounds; each completed loop counts down instead of up.
-- **Completion audio** — reaching 0 in reverse mode plays an "Om Mani Padme Hum" mantra clip.
+## Use
 
-## Getting Started
+Tap **anywhere** on the screen to advance one bead; the glowing bead is your current position. Nine beads = one round. Taps on the controls don't count.
+
+- **Count up** — rounds tick upward.
+- **Countdown** — pick a target (9 / 27 / 54 / 108 or your own); each round subtracts one, and hitting 0 plays the mantra.
+- **Reset** — back to zero.
+- **Beads** — Glass, Wood, Stone, Metal, or Light. Remembered between visits.
+
+## Develop
 
 ```bash
 npm install
-npm run dev
+npm run dev      # local dev server
+npm run build    # production build to dist/
 ```
 
-Open the printed local URL on your phone (or resize your browser to a portrait mobile viewport) to try it out.
-
-## Build
-
-```bash
-npm run build
-```
-
-## Deploy (Netlify)
-
-```bash
-netlify deploy --prod --dir=dist
-```
-
-Or, with a `netlify.toml` build/publish config already set up:
+## Deploy
 
 ```bash
 netlify deploy --prod --build
 ```
 
-## Tech Stack
+## Stack
 
-- React + Vite
-- Plain CSS (glassmorphism via `backdrop-filter`, no UI framework)
-- `<audio>` element for mantra playback
+React + Vite, plain CSS, one component ([src/App.jsx](src/App.jsx)) plus [src/styles.css](src/styles.css). No UI framework, no test suite.
 
-## Project Structure
-
-```
-src/
-  components/
-    MalaRing.jsx        // renders the 9 beads in a circle, handles tap logic
-    Bead.jsx            // single bead, skin-aware styling
-    CounterDisplay.jsx  // round count / remaining rounds
-    ControlsBar.jsx     // reset, mode toggle, skin picker, target input
-    SkinPicker.jsx       // modal/sheet for choosing bead skin
-  hooks/
-    useMalaCounter.js   // beadIndex, roundCount, loop detection, reverse logic
-  assets/
-    audio/mantra.mp3
-```
-
-## Notes
-
-- Audio clip is bundled locally under `src/assets/audio/` (royalty-free, sourced for offline use).
-- No test suite is included by design — this project favors working functionality over test coverage.
+Mantra audio: ["Om mani padme hum" by Dingjue](https://commons.wikimedia.org/wiki/File:20260602_145912_Dingjue_Om_mani_padme_hum.ogg) (Wikimedia Commons, CC0 — public domain), bundled locally at `src/assets/audio/mantra.ogg` so it works offline. Browsers that can't decode Ogg Vorbis fall back to a synthesized chime.
