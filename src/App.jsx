@@ -1,7 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import mantraUrl from './assets/audio/mantra.ogg'
 
-const BEAD_COUNT = 9
+/** Ring sizes. Bead size/active-scale are tuned per count so 108 still reads as a mala. */
+const BEAD_OPTIONS = [
+  { count: 9, size: '18%', active: 1.16 },
+  { count: 27, size: 'max(7.2%, 22px)', active: 1.55 },
+  { count: 108, size: 'max(2.2%, 7px)', active: 2.8 },
+]
+const DEFAULT_BEADS = 9
 const SKINS = [
   { id: 'glass', label: 'Glass' },
   { id: 'wood', label: 'Wood' },
@@ -41,6 +47,10 @@ export default function App() {
   const [reverse, setReverse] = useState(false)
   const [target, setTarget] = useState(108)
   const [skin, setSkin] = useState(() => localStorage.getItem('mala.skin') || 'glass')
+  const [beadCount, setBeadCount] = useState(() => {
+    const saved = Number(localStorage.getItem('mala.beads'))
+    return BEAD_OPTIONS.some((o) => o.count === saved) ? saved : DEFAULT_BEADS
+  })
   const [skinOpen, setSkinOpen] = useState(false)
   const [done, setDone] = useState(false)
   const audioRef = useRef(null)
@@ -51,15 +61,23 @@ export default function App() {
     localStorage.setItem('mala.skin', skin)
   }, [skin])
 
+  useEffect(() => {
+    localStorage.setItem('mala.beads', String(beadCount))
+  }, [beadCount])
+
   const remaining = Math.max(0, target - rounds)
+  const beadStyle = useMemo(() => {
+    const o = BEAD_OPTIONS.find((x) => x.count === beadCount) || BEAD_OPTIONS[0]
+    return { '--bead-size': o.size, '--bead-active': o.active }
+  }, [beadCount])
 
   const positions = useMemo(
     () =>
-      Array.from({ length: BEAD_COUNT }, (_, i) => {
-        const angle = (i / BEAD_COUNT) * Math.PI * 2 - Math.PI / 2
+      Array.from({ length: beadCount }, (_, i) => {
+        const angle = (i / beadCount) * Math.PI * 2 - Math.PI / 2
         return { x: 50 + Math.cos(angle) * 38, y: 50 + Math.sin(angle) * 38 }
       }),
-    []
+    [beadCount]
   )
 
   const celebrate = useCallback(() => {
@@ -77,7 +95,7 @@ export default function App() {
       if (e.target.closest('.no-count')) return
       if (navigator.vibrate) navigator.vibrate(8)
       const c = countRef.current
-      c.bead = (c.bead + 1) % BEAD_COUNT
+      c.bead = (c.bead + 1) % beadCount
       setBeadIndex(c.bead)
       if (c.bead !== 0) return
       c.rounds += 1
@@ -87,7 +105,7 @@ export default function App() {
         celebrate()
       }
     },
-    [reverse, target, celebrate]
+    [reverse, target, beadCount, celebrate]
   )
 
   const reset = () => {
@@ -106,6 +124,14 @@ export default function App() {
   const clearDone = () => {
     countRef.current.done = false
     setDone(false)
+  }
+
+  /** Switching ring size discards the part-finished round; completed rounds stand. */
+  const changeBeadCount = (count) => {
+    if (count === beadCount) return
+    setBeadCount(count)
+    countRef.current.bead = 0
+    setBeadIndex(0)
   }
 
   const changeTarget = (value) => {
@@ -171,7 +197,7 @@ export default function App() {
       )}
 
       <main className="ringwrap">
-        <div className={`ring skin-${skin}`}>
+        <div className={`ring skin-${skin}`} style={beadStyle}>
           <div className="ring-glow" />
           {positions.map((pos, i) => (
             <div
@@ -182,7 +208,7 @@ export default function App() {
           ))}
           <div className="hub glass">
             <span className="hub-num">{beadIndex + 1}</span>
-            <span className="hub-den">/ {BEAD_COUNT}</span>
+            <span className="hub-den">/ {beadCount}</span>
           </div>
         </div>
       </main>
@@ -192,28 +218,45 @@ export default function App() {
           Reset
         </button>
         <button className="ctrl glass" onClick={() => setSkinOpen(true)}>
-          Beads: {SKINS.find((s) => s.id === skin)?.label}
+          Beads: {beadCount} · {SKINS.find((s) => s.id === skin)?.label}
         </button>
       </footer>
 
       {skinOpen && (
         <div className="sheet-backdrop no-count" onClick={() => setSkinOpen(false)}>
           <div className="sheet glass" onClick={(e) => e.stopPropagation()}>
-            <div className="sheet-title">Bead skin</div>
-            <div className="sheet-grid">
-              {SKINS.map((s) => (
-                <button
-                  key={s.id}
-                  className={`swatch skin-${s.id}${s.id === skin ? ' on' : ''}`}
-                  onClick={() => {
-                    setSkin(s.id)
-                    setSkinOpen(false)
-                  }}
-                >
-                  <span className="swatch-bead" />
-                  {s.label}
-                </button>
-              ))}
+            <div className="sheet-section">
+              <div className="sheet-title">Beads per round</div>
+              <div className="countrow">
+                {BEAD_OPTIONS.map((o) => (
+                  <button
+                    key={o.count}
+                    className={o.count === beadCount ? 'chip on' : 'chip'}
+                    onClick={() => changeBeadCount(o.count)}
+                  >
+                    {o.count}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="sheet-section">
+              <div className="sheet-title">Bead skin</div>
+              <div className="sheet-grid">
+                {SKINS.map((s) => (
+                  <button
+                    key={s.id}
+                    className={`swatch skin-${s.id}${s.id === skin ? ' on' : ''}`}
+                    onClick={() => {
+                      setSkin(s.id)
+                      setSkinOpen(false)
+                    }}
+                  >
+                    <span className="swatch-bead" />
+                    {s.label}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         </div>
